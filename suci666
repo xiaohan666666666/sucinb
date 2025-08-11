@@ -1,0 +1,799 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- 服务与变量初始化
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+-- 创建主窗口
+local Window = Rayfield:CreateWindow({
+    Name = "素辞脚本",
+    LoadingTitle = "素辞 - 功能加载中",
+    LoadingSubtitle = "正在初始化功能",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "素辞脚本",
+        FileName = "配置"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "noinvitelink",
+        RememberJoins = true
+    },
+    KeySystem = false
+})
+
+-- 欢迎通知
+Rayfield:Notify({
+    Title = "素辞脚本",
+    Content = "欢迎使用，功能已就绪",
+    Duration = 4,
+    Image = 4483345998
+})
+
+-- 作者信息标签页
+local AuthorTab = Window:CreateTab("作者信息", 4483345998)
+AuthorTab:CreateSection("作者信息")
+AuthorTab:CreateLabel("作者: 素辞")
+AuthorTab:CreateLabel("作者QQ: 1627515558")
+AuthorTab:CreateLabel("QQ群: 1627515558")
+
+AuthorTab:CreateSection("快捷操作")
+AuthorTab:CreateButton({
+    Name = "复制作者QQ",
+    Callback = function()
+        if setclipboard then
+            setclipboard("1627515558")
+            Rayfield:Notify({Name = "成功", Content = "QQ已复制", Duration = 2})
+        end
+    end
+})
+
+AuthorTab:CreateButton({
+    Name = "复制QQ群",
+    Callback = function()
+        if setclipboard then
+            setclipboard("1627515558")
+            Rayfield:Notify({Name = "成功", Content = "QQ群已复制", Duration = 2})
+        end
+    end
+})
+
+-- 玩家信息标签页
+local PlayerTab = Window:CreateTab("玩家信息", 4483345998)
+PlayerTab:CreateSection("基础信息")
+
+local executorName = "未知"
+pcall(function() executorName = identifyexecutor() or "未知" end)
+
+PlayerTab:CreateLabel("用户名: " .. player.Name)
+PlayerTab:CreateLabel("用户ID: " .. tostring(player.UserId))
+PlayerTab:CreateLabel("注入器: " .. executorName)
+PlayerTab:CreateLabel("服务器ID: " .. tostring(game.GameId))
+
+-- 玩家功能标签页
+local FunctionTab = Window:CreateTab("拔出一把剑功能", 4483345998)
+
+-- 自动获取经验相关变量和逻辑
+local isGainingExp = false
+local gainExpThread = nil
+local defaultWaitTime = 1
+local currentWaitTime = defaultWaitTime
+
+-- 开启自动获取经验函数
+local function startGainExp()
+    if isGainingExp then
+        Rayfield:Notify({Name = "提示", Content = "已经在自动获取经验中", Duration = 2})
+        return
+    end
+    isGainingExp = true
+    gainExpThread = spawn(function()
+        while isGainingExp do
+            local args = {[1] = "Boss10"}
+            local success, err = pcall(function()
+                game:GetService("ReplicatedStorage").Remotes.Events.WinBossEvent:FireServer(unpack(args))
+            end)
+            if not success then
+                Rayfield:Notify({Name = "错误", Content = "触发失败: ".. tostring(err), Duration = 2})
+            end
+            wait(currentWaitTime)
+        end
+    end)
+    Rayfield:Notify({Name = "开始", Content = "已开始自动获取经验", Duration = 2})
+end
+
+-- 关闭自动获取经验函数
+local function stopGainExp()
+    if not isGainingExp then
+        Rayfield:Notify({Name = "提示", Content = "当前未在自动获取经验", Duration = 2})
+        return
+    end
+    isGainingExp = false
+    if gainExpThread then
+        coroutine.close(gainExpThread)
+        gainExpThread = nil
+    end
+    Rayfield:Notify({Name = "停止", Content = "已停止自动获取经验", Duration = 2})
+end
+
+-- 自动获取经验区域
+FunctionTab:CreateSection("自动获取经验")
+FunctionTab:CreateToggle({
+    Name = "自动获取经验",
+    CurrentValue = false,
+    Flag = "AutoExpToggle",
+    Callback = function(Value)
+        if Value then
+            startGainExp()
+        else
+            stopGainExp()
+        end
+    end
+})
+
+FunctionTab:CreateInput({
+    Name = "设置刷经验等待时间 (秒)",
+    PlaceholderText = "默认1秒",
+    CurrentValue = tostring(defaultWaitTime),
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num and num > 0 then
+            currentWaitTime = num
+            Rayfield:Notify({Name = "成功", Content = "等待时间已设置为 ".. num, Duration = 2})
+        else
+            Rayfield:Notify({Name = "错误", Content = "请输入有效的正数", Duration = 2})
+        end
+    end
+})
+
+-- 通用功能按钮
+FunctionTab:CreateSection("通用功能")
+FunctionTab:CreateButton({
+    Name = "开启",
+    Callback = function()
+        local args = {[1] = 1}
+        local success, err = pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.Events.RemoveC:FireServer(unpack(args))
+        end)
+        if success then
+            Rayfield:Notify({Name = "成功", Content = "开启功能执行成功", Duration = 2})
+        else
+            Rayfield:Notify({Name = "错误", Content = "开启功能执行失败: ".. tostring(err), Duration = 2})
+        end
+    end
+})
+
+FunctionTab:CreateButton({
+    Name = "关闭",
+    Callback = function()
+        local args = {[1] = 0}
+        local success, err = pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.Events.RemoveC:FireServer(unpack(args))
+        end)
+        if success then
+            Rayfield:Notify({Name = "成功", Content = "关闭功能执行成功", Duration = 2})
+        else
+            Rayfield:Notify({Name = "错误", Content = "关闭功能执行失败: ".. tostring(err), Duration = 2})
+        end
+    end
+})
+
+-- 自动PVP相关逻辑
+local selectedOpponent = nil
+local isAutoPVPRunning = false
+local victoryInterval = 5 
+local pvpArgs = {
+    [1] = "Vincent12345qw",
+    [2] = true,
+    [3] = false
+}
+
+-- PVP功能区域
+FunctionTab:CreateSection("自动PVP")
+FunctionTab:CreateButton({
+    Name = "开始自动PVP",
+    Callback = function()
+        if isAutoPVPRunning then
+            Rayfield:Notify({Name = "提示", Content = "自动PVP已经在运行", Duration = 2})
+            return
+        end
+        
+        isAutoPVPRunning = true
+        Rayfield:Notify({Name = "成功", Content = "自动PVP已启动", Duration = 2})
+        
+        spawn(function()
+            while isAutoPVPRunning do
+                local success, err = pcall(function()
+                    game:GetService("ReplicatedStorage").Remotes.Events.WinEvent_PVP:FireServer(unpack(pvpArgs))
+                end)
+                if success then
+                    Rayfield:Notify({Name = "胜利", Content = "成功触发PVP事件", Duration = 2})
+                else
+                    Rayfield:Notify({Name = "失败", Content = "PVP交互失败: ".. tostring(err), Duration = 2})
+                end
+                wait(victoryInterval)
+            end
+        end)
+    end
+})
+
+FunctionTab:CreateButton({
+    Name = "停止自动PVP",
+    Callback = function()
+        if not isAutoPVPRunning then
+            Rayfield:Notify({Name = "提示", Content = "自动PVP未运行", Duration = 2})
+            return
+        end
+        local args = {[1] = 0}
+        local success, err = pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.Events.RemoveC:FireServer(unpack(args))
+        end)
+        if success then
+            isAutoPVPRunning = false
+            Rayfield:Notify({Name = "成功", Content = "自动PVP已停止", Duration = 2})
+        else
+            Rayfield:Notify({Name = "错误", Content = "停止失败: ".. tostring(err), Duration = 2})
+        end
+    end
+})
+
+-- 躲鬼标签页（nico下一个机器人功能）
+local HideGhostTab = Window:CreateTab("nico下一个机器人功能", 4483345998)
+
+-- 躲鬼功能变量
+local isAutoScoring = false
+local scoreInterval = 1
+local scoreAmount = 1
+local scoreValue
+
+-- 初始化积分对象
+local function initScoreObject()
+    if not scoreValue then
+        scoreValue = player:FindFirstChild("stats") and player.stats:FindFirstChild("score")
+        if not scoreValue then
+            Rayfield:Notify({Name = "错误", Content = "未找到积分对象", Duration = 3})
+            return false
+        end
+    end
+    return true
+end
+
+-- 自动获取积分逻辑
+local function startAutoScore()
+    if isAutoScoring then
+        Rayfield:Notify({Name = "提示", Content = "已开启自动积分", Duration = 2})
+        return
+    end
+    if not initScoreObject() then return end
+    
+    isAutoScoring = true
+    Rayfield:Notify({Name = "开始", Content = "自动获取积分已启动", Duration = 2})
+    
+    spawn(function()
+        while isAutoScoring do
+            pcall(function()
+                scoreValue.Value = scoreValue.Value + scoreAmount
+            end)
+            wait(scoreInterval)
+        end
+    end)
+end
+
+local function stopAutoScore()
+    if not isAutoScoring then
+        Rayfield:Notify({Name = "提示", Content = "未开启自动积分", Duration = 2})
+        return
+    end
+    isAutoScoring = false
+    Rayfield:Notify({Name = "停止", Content = "自动获取积分已关闭", Duration = 2})
+end
+
+-- 传送到安全点
+local function teleportToSafePoint()
+    pcall(function()
+        game:GetService("ReplicatedStorage"):WaitForChild("events"):WaitForChild("player"):WaitForChild("char"):WaitForChild("respawnchar"):FireServer()
+        Rayfield:Notify({Name = "成功", Content = "已传送至安全点", Duration = 2})
+    end)
+end
+
+HideGhostTab:CreateToggle({
+    Name = "自动获取积分",
+    CurrentValue = false,
+    Flag = "AutoScoreToggle",
+    Callback = function(Value)
+        if Value then
+            startAutoScore()
+        else
+            stopAutoScore()
+        end
+    end
+})
+
+HideGhostTab:CreateInput({
+    Name = "设置积分间隔（秒）",
+    PlaceholderText = "默认1秒",
+    CurrentValue = tostring(scoreInterval),
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num and num > 0 then
+            scoreInterval = num
+            Rayfield:Notify({Name = "成功", Content = "间隔已设置为 ".. num .." 秒", Duration = 2})
+        else
+            Rayfield:Notify({Name = "错误", Content = "请输入有效数字", Duration = 2})
+        end
+    end
+})
+
+HideGhostTab:CreateInput({
+    Name = "设置每次积分增量",
+    PlaceholderText = "默认1分",
+    CurrentValue = tostring(scoreAmount),
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num and num > 0 then
+            scoreAmount = num
+            Rayfield:Notify({Name = "成功", Content = "每次增加 ".. num .." 积分", Duration = 2})
+        else
+            Rayfield:Notify({Name = "错误", Content = "请输入有效数字", Duration = 2})
+        end
+    end
+})
+
+HideGhostTab:CreateSection("传送功能")
+HideGhostTab:CreateButton({
+    Name = "传送到安全点",
+    Callback = teleportToSafePoint
+})
+
+-- 机器人透视
+HideGhostTab:CreateSection("机器人透视")
+
+-- 透视控制变量（开关状态、事件连接）
+local isESPEnabled = false
+local heartbeatConn = nil   -- 主循环连接
+local childAddedConn = nil  -- 新机器人监听连接
+
+-- 创建机器人高亮
+local function createBotHighlight(bot)
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "BotHighlight"
+    box.Adornee = bot
+    box.AlwaysOnTop = true
+    box.ZIndex = 1
+    box.Color3 = Color3.fromRGB(0, 255, 100)  -- 荧光绿
+    box.Transparency = 0.7
+    box.Size = bot:GetExtentsSize() * 1.1     -- 比实际尺寸大10%
+    
+    -- 创建名字标签
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "BotNameTag"
+    billboard.Adornee = bot.PrimaryPart or bot:FindFirstChild("HumanoidRootPart") or bot:GetChildren()[1]
+    billboard.Size = UDim2.new(4, 0, 1.5, 0)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.Text = bot.Name
+    textLabel.TextColor3 = Color3.new(1, 1, 1)
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.TextStrokeTransparency = 0.3
+    textLabel.TextSize = 18
+    
+    textLabel.Parent = billboard
+    box.Parent = bot
+    billboard.Parent = bot
+end
+
+-- 更新高亮（大小和位置）
+local function updateHighlights()
+    for _, bot in ipairs(workspace.bots:GetChildren()) do
+        local existingBox = bot:FindFirstChild("BotHighlight")
+        local existingTag = bot:FindFirstChild("BotNameTag")
+        
+        if not existingBox then
+            createBotHighlight(bot)
+        else
+            -- 更新方框大小
+            existingBox.Size = bot:GetExtentsSize() * 1.1
+        end
+        
+        -- 更新标签位置
+        if existingTag then
+            existingTag.Adornee = bot.PrimaryPart or bot:FindFirstChild("HumanoidRootPart") or bot:GetChildren()[1]
+        end
+    end
+end
+
+-- 开启透视（初始化+监听）
+local function startESP()
+    -- 1. 初始化现有机器人
+    for _, bot in ipairs(workspace.bots:GetChildren()) do
+        createBotHighlight(bot)
+    end
+    
+    -- 2. 监听新机器人
+    childAddedConn = workspace.bots.ChildAdded:Connect(function(bot)
+        createBotHighlight(bot)
+    end)
+    
+    -- 3. 主循环更新
+    heartbeatConn = RunService.Heartbeat:Connect(updateHighlights)
+    
+    Rayfield:Notify({Name = "提示", Content = "机器人透视已开启", Duration = 2})
+end
+
+-- 关闭透视（断开连接+销毁高亮）
+local function stopESP()
+    -- 1. 断开事件连接
+    if heartbeatConn then
+        heartbeatConn:Disconnect()
+        heartbeatConn = nil
+    end
+    if childAddedConn then
+        childAddedConn:Disconnect()
+        childAddedConn = nil
+    end
+    
+    -- 2. 销毁所有高亮对象
+    for _, bot in ipairs(workspace.bots:GetChildren()) do
+        local box = bot:FindFirstChild("BotHighlight")
+        local tag = bot:FindFirstChild("BotNameTag")
+        if box then box:Destroy() end
+        if tag then tag:Destroy() end
+    end
+    
+    Rayfield:Notify({Name = "提示", Content = "机器人透视已关闭", Duration = 2})
+end
+
+-- Rayfield开关：控制透视启停
+HideGhostTab:CreateToggle({
+    Name = "开启机器人透视",
+    CurrentValue = false,
+    Flag = "BotESPToggle",
+    Callback = function(Value)
+        isESPEnabled = Value
+        if Value then
+            startESP()
+        else
+            stopESP()
+        end
+    end
+})
+
+-- 自动连跳功能（嵌入躲鬼标签页）
+HideGhostTab:CreateSection("自动连跳")
+
+-- 连跳核心变量
+local isAutoJumping = false
+local jumpLoop = nil
+local jumpInterval = 0.3
+
+-- 获取角色和Humanoid
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+local function getHumanoid(character)
+    return character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 5)
+end
+
+-- 启动连跳
+local function startAutoJump()
+    if isAutoJumping then return end
+    isAutoJumping = true
+    
+    jumpLoop = spawn(function()
+        while isAutoJumping do
+            local character = getCharacter()
+            local humanoid = getHumanoid(character)
+            if humanoid and humanoid.Health > 0 then
+                humanoid.Jump = true
+            end
+            wait(jumpInterval)
+        end
+    end)
+    Rayfield:Notify({Name = "连跳", Content = "已开启", Duration = 2})
+end
+
+-- 停止连跳
+local function stopAutoJump()
+    if not isAutoJumping then return end
+    isAutoJumping = false
+    if jumpLoop then
+        coroutine.close(jumpLoop)
+        jumpLoop = nil
+    end
+    Rayfield:Notify({Name = "连跳", Content = "已关闭", Duration = 2})
+end
+
+-- 连跳开关
+HideGhostTab:CreateToggle({
+    Name = "开启自动连跳",
+    CurrentValue = false,
+    Flag = "AutoJumpToggle",
+    Callback = function(Value)
+        if Value then
+            startAutoJump()
+        else
+            stopAutoJump()
+        end
+    end
+})
+
+-- 间隔设置
+HideGhostTab:CreateInput({
+    Name = "跳跃间隔（秒）",
+    PlaceholderText = "默认0.3",
+    CurrentValue = tostring(jumpInterval),
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num and num > 0.05 and num < 2 then
+            jumpInterval = num
+            Rayfield:Notify({Name = "连跳", Content = "间隔已设置为"..num, Duration = 2})
+        end
+    end
+})
+
+-- 【新增：跑步速度修改功能】
+HideGhostTab:CreateSection("跑步速度修改")
+
+-- 速度功能核心变量（完全隔离，避免冲突）
+local speedControl = {
+    target = 80,       -- 目标速度值
+    active = false,    -- 功能开关状态
+    monitor = nil,     -- 心跳监控连接
+    humanoid = nil     -- 缓存角色移动组件
+}
+
+-- 独立获取Humanoid（与连跳功能的getHumanoid区分）
+local function speed_get_humanoid()
+    local char = player.Character or player.CharacterAdded:Wait()  -- 等待角色加载
+    local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)  -- 5秒超时容错
+    if hum then
+        speedControl.humanoid = hum  -- 缓存引用
+    else
+        Rayfield:Notify({Name = "速度错误", Content = "未找到移动组件", Duration = 3})
+    end
+    return hum
+end
+
+-- 启动速度修改
+local function speed_start()
+    -- 断开旧监控（防止重复连接）
+    if speedControl.monitor then
+        speedControl.monitor:Disconnect()
+        speedControl.monitor = nil
+    end
+    
+    -- 获取移动组件
+    local hum = speed_get_humanoid()
+    if not hum then
+        speedControl.active = false  -- 启动失败时关闭开关
+        return
+    end
+    
+    -- 设置初始速度
+    hum.WalkSpeed = speedControl.target
+    Rayfield:Notify({Name = "速度设置", Content = "已开启，当前速度: "..speedControl.target, Duration = 2})
+    
+    -- 启动心跳监控（防止速度被其他功能篡改）
+    speedControl.monitor = RunService.Heartbeat:Connect(function()
+        if not speedControl.active then return end  -- 功能关闭时退出
+        if speedControl.humanoid and speedControl.humanoid.WalkSpeed ~= speedControl.target then
+            speedControl.humanoid.WalkSpeed = speedControl.target  -- 强制维持目标速度
+        end
+    end)
+end
+
+-- 停止速度修改（恢复默认）
+local function speed_stop()
+    -- 断开监控连接
+    if speedControl.monitor then
+        speedControl.monitor:Disconnect()
+        speedControl.monitor = nil
+    end
+    
+    -- 恢复默认速度（30）
+    if speedControl.humanoid then
+        speedControl.humanoid.WalkSpeed = 30
+        Rayfield:Notify({Name = "速度设置", Content = "已关闭，恢复默认速度", Duration = 2})
+    end
+    
+    -- 清空缓存
+    speedControl.humanoid = nil
+end
+
+-- 速度调节滑块
+HideGhostTab:CreateSlider({
+    Name = "速度值 (1-200)",
+    Range = {1, 200},
+    Increment = 1,
+    CurrentValue = speedControl.target,
+    Flag = "SpeedSlider_NicoBot",  -- 唯一标识，与其他功能区分
+    Callback = function(value)
+        speedControl.target = value  -- 更新目标速度
+        -- 实时生效（如果功能已开启且有移动组件）
+        if speedControl.active and speedControl.humanoid then
+            speedControl.humanoid.WalkSpeed = value
+        end
+    end
+})
+
+-- 速度功能开关
+HideGhostTab:CreateToggle({
+    Name = "开启速度修改",
+    CurrentValue = false,
+    Flag = "SpeedToggle_NicoBot",  -- 唯一标识，与其他功能区分
+    Callback = function(state)
+        speedControl.active = state
+        if state then
+            speed_start()  -- 开启功能
+        else
+            speed_stop()   -- 关闭功能
+        end
+    end
+})
+
+-- 功能说明
+HideGhostTab:CreateLabel("提示：速度建议设置30-150，过高可能导致异常")
+
+-- 选择PVP对手标签页
+local OpponentTab = Window:CreateTab("选择PVP对手", 4483345998)
+OpponentTab:CreateSection("在线玩家")
+
+local function updateOpponents()
+    -- 加载在线玩家列表
+    local otherPlayers = Players:GetPlayers()
+    for _, opp in pairs(otherPlayers) do
+        if opp ~= player then
+            OpponentTab:CreateButton({
+                Name = opp.Name,
+                Callback = function() 
+                    selectedOpponent = opp
+                    Rayfield:Notify({Name = "选择成功", Content = "已选择 ".. opp.Name, Duration = 2})
+                end
+            })
+        end
+    end
+end
+
+-- 初始化对手列表
+updateOpponents()
+
+-- 越狱标签页模块
+local JailbreakTab = Window:CreateTab("越狱", 4483345998)
+
+-- 核心变量
+local isRunning = false  -- 循环开关状态
+local character, rootPart  -- 角色及根部件引用
+local finishPart  -- 终点部件
+local cashObj  -- 现金数值对象
+local loopCoroutine  -- 主循环协程
+
+-- 1. 查找现金对象
+local function findCashObject()
+    cashObj = nil
+    local cashNames = {"Cash", "cash", "Money", "money", "Coins", "coins"}
+    -- 检查常见数值容器
+    for _, name in ipairs(cashNames) do
+        local obj = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild(name)
+        if not obj then obj = player:FindFirstChild("stats") and player.stats:FindFirstChild(name) end
+        if not obj then obj = player:FindFirstChild(name) end
+        -- 验证是否为有效数值类型
+        if obj and (obj:IsA("IntValue") or obj:IsA("NumberValue")) then
+            cashObj = obj
+            Rayfield:Notify({Content = "找到现金对象："..obj:GetFullName(), Duration = 2})
+            return
+        end
+    end
+    Rayfield:Notify({Content = "未找到现金（不影响刷取）", Duration = 5})
+end
+
+-- 2. 查找终点部件（大小写不敏感）
+local function findFinish()
+    finishPart = nil
+    -- 构建匹配模式（支持大小写）
+    local finishPattern = string.gsub("Finish", "%a", function(c)
+        return "["..c:upper()..c:lower().."]"
+    end)
+    
+    -- 遍历场景查找符合条件的部件
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name:match(finishPattern) and obj:IsA("BasePart") then
+            finishPart = obj
+            Rayfield:Notify({Content = "找到终点："..finishPart.Name, Duration = 2})
+            return
+        end
+    end
+    Rayfield:Notify({Content = "未找到终点！请刷新重试", Duration = 5})
+end
+
+-- 3. 防落水传送逻辑
+local function teleportTo(targetPart)
+    -- 向下射线检测地面（避免落水）
+    local downRay = Ray.new(targetPart.Position, Vector3.new(0, -100, 0))
+    local hitPart, hitPos = workspace:FindPartOnRay(downRay, targetPart)
+    local safePos = targetPart.Position + Vector3.new(0, 3, 0)  -- 保底高度
+    
+    -- 检测到有效地面时调整位置
+    if hitPart and hitPart.Transparency < 1 and not hitPart:IsA("Terrain") then
+        safePos = hitPos + Vector3.new(0, 1, 0)  -- 地面上方1格
+    end
+    
+    rootPart.CFrame = CFrame.new(safePos)
+    Rayfield:Notify({Content = "已传送至"..targetPart.Name, Duration = 1})
+end
+
+-- 4. 主循环逻辑
+local function autoLoop()
+    while isRunning do
+        -- 终点缺失时自动重试查找
+        if not finishPart then
+            findFinish()
+            wait(3)
+            if not finishPart then continue end
+        end
+        
+        -- 执行传送
+        teleportTo(finishPart)
+        wait(2)  -- 等待结算
+        
+        -- 显示现金变动（如果找到现金对象）
+        if cashObj then
+            Rayfield:Notify({Content = "现金："..cashObj.Value, Duration = 1})
+        end
+        
+        wait(1)  -- 循环间隔
+    end
+end
+
+-- 5. UI组件
+JailbreakTab:CreateSection("核心功能")
+-- 启动/停止循环开关
+JailbreakTab:CreateToggle({
+    Name = "启动终点循环",
+    CurrentValue = false,
+    Callback = function(state)
+        isRunning = state
+        if state then
+            -- 初始化角色
+            character = player.Character or player.CharacterAdded:Wait()
+            rootPart = character:WaitForChild("HumanoidRootPart")
+            
+            -- 初始化数据
+            findCashObject()
+            findFinish()
+            
+            -- 启动循环
+            loopCoroutine = coroutine.create(autoLoop)
+            coroutine.resume(loopCoroutine)
+        else
+            -- 停止循环
+            if loopCoroutine then
+                coroutine.close(loopCoroutine)
+                loopCoroutine = nil
+            end
+            isRunning = false
+            Rayfield:Notify({Content = "已强制停止", Duration = 2})
+        end
+    end
+})
+
+JailbreakTab:CreateSection("辅助操作")
+-- 手动刷新按钮
+JailbreakTab:CreateButton({
+    Name = "强制刷新（现金+终点）",
+    Callback = function()
+        findCashObject()
+        findFinish()
+    end
+})
+
+-- 功能说明
+JailbreakTab:CreateLabel("功能说明：自动循环传送至终点触发结算，包含防落水设计")
